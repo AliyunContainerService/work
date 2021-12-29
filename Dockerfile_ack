@@ -1,0 +1,16 @@
+FROM docker.io/openshift/origin-release:golang-1.16 AS builder
+WORKDIR /go/src/open-cluster-management.io/work
+COPY . .
+ENV GO_PACKAGE open-cluster-management.io/work
+
+RUN make build --warn-undefined-variables
+RUN make build-e2e --warn-undefined-variables
+
+FROM registry.cn-hangzhou.aliyuncs.com/acs/centos:7-base
+ENV USER_UID=99
+
+COPY --from=builder /go/src/open-cluster-management.io/work/work /
+COPY --from=builder /go/src/open-cluster-management.io/work/e2e.test /
+RUN microdnf update && microdnf clean all
+
+USER ${USER_UID}
